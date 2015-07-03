@@ -1,0 +1,10 @@
+{
+  "name": "feedapp",
+  "version": "0.0.1",
+  "dependencies": {
+    "normalize.css": "~3.0.3",
+    "jquery": "~2.1.4",
+    "bootstrap": "~3.3.5",
+    "canjs": "~2.2.6"
+  }
+}
