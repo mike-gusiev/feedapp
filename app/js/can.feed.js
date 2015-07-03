@@ -1,52 +1,92 @@
-var FeedApp = can.Construct.extend({
+var FeedApp = can.Control.extend({
     params: {
         link: "http://api.massrelevance.com/MassRelDemo/kindle.json",
-        length: 10,
-        interval: 10000,
-        tag: "body"
+        limit: 10,
+        interval: 10000
     },
+
     data: {},
-    timer: false
-}, {
-    init: function (params) {
+    timer: false,
+    firstRun: true,
+
+    init: function (el, params) {
         this.params = $.extend(this.params, params);
         this.refresh();
     },
 
     refresh: function () {
-        console.log('Refresh!');
         var self = this;
 
         $.ajax( {
             type: "POST",
-            url: self.params.link
+            url: self.params.link,
+            data: {
+                limit: self.params.limit,
+                since_id: self.last_id
+            }
         }).done(function(data) {
-            if(data.length != "undefined") {
-                self.data = data;
-                self.view();
+            console.log("Refresh:", data);
+
+            if(data.length === "undefined") return;
+
+            if(data.length) {
+                self.last_id = data[0].id_str
+                self.view(data);
             }
         });
     },
 
-    view: function () {
+    view: function (data) {
+
+        if(this.firstRun) {
+            this.viewFirst(data);
+            return;
+        }
+
+        var self = this;
+
+        data.map(function (item) {
+
+            self.data.unshift(item);
+            self.data.pop();
+
+            var itemHTML = can.view("app/tpl/feed.tpl", {
+                params: self.params,
+                data: [item],
+                firstRun: false
+            });
+
+            $("#feed-list").prepend(itemHTML);
+            $("#feed-list .panel").last().remove();
+
+        });
+    },
+
+    viewFirst: function (data) {
+        this.data = data;
+
         var frag = can.view("app/tpl/feed.tpl", {
             params: this.params,
-            data: this.getList()
+            data: this.getList(),
+            firstRun: true
         });
 
-        $(this.params.tag).html(frag);
+        $(this.element).html(frag);
 
         if(!this.timer) this.startRefresh();
+        this.firstRun = false;
     },
 
     getList: function () {
-        var new_data = [];
+        var newData = [];
 
-        for(var i=0; i<this.params.length; i++) {
-            new_data.push(this.data[i]);
+        for(var i=0; i<this.params.limit; i++) {
+            if(i >= this.data.length) break;
+
+            newData.push(this.data[i]);
         }
 
-        return new_data;
+        return newData;
     },
 
     startRefresh: function () {

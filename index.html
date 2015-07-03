@@ -27,11 +27,10 @@
     <script src="bower_components/canjs/can.jquery.min.js"></script>
     <script src="app/js/can.feed.js"></script>
     <script>
-        var feed = new FeedApp({
+        var feed = new FeedApp('#app', {
             link: 'http://api.massrelevance.com/MassRelDemo/kindle.json',
-            length: 10,
-            interval: 3000,
-            tag: '#app'
+            limit: 100,
+            interval: 3000
         });
 
     </script>
