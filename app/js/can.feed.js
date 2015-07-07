@@ -8,86 +8,73 @@ var FeedApp = can.Control.extend({
     data: {},
     timer: false,
     firstRun: true,
+    lastAjax: true,
 
-    init: function (el, params) {
-        this.params = $.extend(this.params, params);
+    init: function () {
+        this.params = $.extend(this.params, this.options);
         this.refresh();
     },
 
     refresh: function () {
-        var self = this;
+        if(this.lastAjax == false) return;
 
-        $.ajax( {
+        this.lastAjax = false;
+        $.ajax({
             type: "POST",
-            url: self.params.link,
+            url: this.params.link,
+            context: this,
             data: {
-                limit: self.params.limit,
-                since_id: self.last_id
+                limit: this.params.limit,
+                since_id: this.last_id
             }
-        }).done(function(data) {
-            console.log("Refresh:", data);
-
-            if(data.length === "undefined") return;
-
-            if(data.length) {
-                self.last_id = data[0].id_str
-                self.view(data);
-            }
-        });
+        }).done(this.parse);
     },
 
-    view: function (data) {
+    parse: function (data) {
+        console.log("Refresh:", data);
+        this.lastAjax = true;
 
+        if(data.length) {
+            this.last_id = data[0].id_str
+            this.build(data);
+        }
+    },
+
+    build: function (newData) {
         if(this.firstRun) {
-            this.viewFirst(data);
+            this.view(newData);
             return;
         }
 
         var self = this;
-
-        data.map(function (item) {
-
+        newData.map(function (item) {
             self.data.unshift(item);
-            self.data.pop();
 
-            var itemHTML = can.view("app/tpl/feed.tpl", {
-                params: self.params,
-                data: [item],
-                firstRun: false
-            });
-
-            $("#feed-list").prepend(itemHTML);
-            $("#feed-list .panel").last().remove();
-
+            if(self.data.length > self.params.limit) self.data.pop();
         });
     },
 
-    viewFirst: function (data) {
-        this.data = data;
+    view: function (data) {
+        this.data = new can.List(data);
 
-        var frag = can.view("app/tpl/feed.tpl", {
-            params: this.params,
-            data: this.getList(),
-            firstRun: true
+        var mainHTML = can.view("app/tpl/main.tpl", {
+            data: this.data
         });
 
-        $(this.element).html(frag);
+        $(this.element).html(mainHTML);
+
+
+        var itemHTML = can.view("app/tpl/item.tpl", {
+            data: this.data
+        });
+
+        $('#feed-list').html(itemHTML);
+
 
         if(!this.timer) this.startRefresh();
         this.firstRun = false;
     },
 
-    getList: function () {
-        var newData = [];
-
-        for(var i=0; i<this.params.limit; i++) {
-            if(i >= this.data.length) break;
-
-            newData.push(this.data[i]);
-        }
-
-        return newData;
-    },
 
     startRefresh: function () {
         var self = this;
