@@ -1,20 +1,20 @@
 var FeedApp = can.Control.extend({
-    params: {
+    defaults: {
         link: "http://api.massrelevance.com/MassRelDemo/kindle.json",
         limit: 10,
         interval: 10000
     },
-
     data: {},
     timer: false,
-    lastAjax: true,
-
+    lastAjax: true
+}, {
     init: function () {
-        this.params = $.extend(this.params, this.options);
+        console.log(this.options);
+
         this.data = new can.List();
         this.view();
 
-        this.refresh();
+        this.startRefresh();
     },
 
     view: function () {
@@ -23,8 +23,6 @@ var FeedApp = can.Control.extend({
         });
 
         $(this.element).html(mainHTML);
-
-        if(!this.timer) this.startRefresh();
     },
 
     refresh: function () {
@@ -33,10 +31,10 @@ var FeedApp = can.Control.extend({
         this.lastAjax = false;
         $.ajax({
             type: "POST",
-            url: this.params.link,
+            url: this.options.link,
             context: this,
             data: {
-                limit: this.params.limit,
+                limit: this.options.limit,
                 since_id: this.last_id
             }
         }).done(this.parse);
@@ -59,17 +57,18 @@ var FeedApp = can.Control.extend({
         newData.map(function (item) {
             self.data.unshift(item);
 
-            if(self.data.length > self.params.limit) self.data.pop();
+            if(self.data.length > self.options.limit) self.data.pop();
         });
         can.batch.stop();
     },
 
     startRefresh: function () {
+        this.refresh();
         var self = this;
 
         this.timer = setInterval(function () {
             self.refresh();
-        }, this.params.interval);
+        }, this.options.interval);
     },
 
     stopRefresh: function () {
