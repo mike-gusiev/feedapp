@@ -9,8 +9,6 @@ var FeedApp = can.Control.extend({
     lastAjax: true
 }, {
     init: function () {
-        console.log(this.options);
-
         this.data = new can.List();
         this.view();
 
