@@ -7,12 +7,24 @@ var FeedApp = can.Control.extend({
 
     data: {},
     timer: false,
-    firstRun: true,
     lastAjax: true,
 
     init: function () {
         this.params = $.extend(this.params, this.options);
+        this.data = new can.List();
+        this.view();
+
         this.refresh();
+    },
+
+    view: function () {
+        var mainHTML = can.view("app/tpl/main.tpl", {
+            data: this.data
+        });
+
+        $(this.element).html(mainHTML);
+
+        if(!this.timer) this.startRefresh();
     },
 
     refresh: function () {
@@ -36,45 +48,21 @@ var FeedApp = can.Control.extend({
 
         if(data.length) {
             this.last_id = data[0].id_str
-            this.build(data);
+            this.addNew(data);
         }
     },
 
-    build: function (newData) {
-        if(this.firstRun) {
-            this.view(newData);
-            return;
-        }
-
+    addNew: function (newData) {
         var self = this;
+
+        can.batch.start();
         newData.map(function (item) {
             self.data.unshift(item);
 
             if(self.data.length > self.params.limit) self.data.pop();
         });
+        can.batch.stop();
     },
-
-    view: function (data) {
-        this.data = new can.List(data);
-
-        var mainHTML = can.view("app/tpl/main.tpl", {
-            data: this.data
-        });
-
-        $(this.element).html(mainHTML);
-
-
-        var itemHTML = can.view("app/tpl/item.tpl", {
-            data: this.data
-        });
-
-        $('#feed-list').html(itemHTML);
-
-
-        if(!this.timer) this.startRefresh();
-        this.firstRun = false;
-    },
-
 
     startRefresh: function () {
         var self = this;
